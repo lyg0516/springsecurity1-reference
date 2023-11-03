@@ -37,4 +37,7 @@ public class User {
         this.createDate = createDate;
     }
 
+    public User() {
+
+    }
 }

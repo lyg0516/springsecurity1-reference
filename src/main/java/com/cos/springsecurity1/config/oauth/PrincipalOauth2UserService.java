@@ -1,6 +1,10 @@
 package com.cos.springsecurity1.config.oauth;
 
 import com.cos.springsecurity1.auth.PrincipalDetail;
+import com.cos.springsecurity1.config.oauth.provider.FacebookUserInfo;
+import com.cos.springsecurity1.config.oauth.provider.GoogleUserInfo;
+import com.cos.springsecurity1.config.oauth.provider.NaverUserInfo;
+import com.cos.springsecurity1.config.oauth.provider.OAuth2UserInfo;
 import com.cos.springsecurity1.model.User;
 import com.cos.springsecurity1.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +14,8 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 public class PrincipalOauth2UserService extends DefaultOAuth2UserService {
@@ -28,11 +34,22 @@ public class PrincipalOauth2UserService extends DefaultOAuth2UserService {
         // -> AccessToken요청 -> userRequest정보 -> 회원프로필 받아야함
         // 이때사용되는 함수가 loadUser함수: 회원 프로필을 받을 수 있음
         OAuth2User oAuth2User = super.loadUser(userRequest);
-        String provider = userRequest.getClientRegistration().getClientId();
-        String providerID = oAuth2User.getAttribute("sub");
+        System.out.println(userRequest.getClientRegistration().getRegistrationId());
+        OAuth2UserInfo oAuth2UserInfo = null;
+        if(userRequest.getClientRegistration().getRegistrationId().equals("google")){
+            oAuth2UserInfo = new GoogleUserInfo(oAuth2User.getAttributes());
+        }else if(userRequest.getClientRegistration().getRegistrationId().equals("facebook")){
+            oAuth2UserInfo = new FacebookUserInfo(oAuth2User.getAttributes());
+        } else if(userRequest.getClientRegistration().getRegistrationId().equals("naver")){
+            oAuth2UserInfo = new NaverUserInfo((Map)oAuth2User.getAttributes().get("response"));
+        }
+
+
+        String provider = oAuth2UserInfo.getProvider();
+        String providerID = oAuth2UserInfo.getProviderId();
         String username = provider + "_" + providerID;
         String password = bCryptPasswordEncoder.encode("겟인데어");
-        String email = oAuth2User.getAttribute("email");
+        String email = oAuth2UserInfo.getEmail();
         String role = "ROLE_USER";
 
         User userEntity = userRepository.findByUsername(username);
